@@ -1,0 +1,26 @@
+FROM airstack/core:latest
+
+USER root
+ENV HOME /root
+WORKDIR /root
+
+# frontend = assume http public traffic in
+# backend = assume http or tcp private traffic in
+# web = assume http public traffic in.
+# worker = pull-only for inbound traffic. proxy tcp or http traffic to queue or db.
+
+RUN \
+  AIRSTACK_NODEJS_VERSION="v0.10.31"; \
+  groupadd --system node --gid 434 && \
+  useradd --uid 433 --system --gid node -s /bin/bash --comment "NodeJS user" node && \
+  mkdir -vp /tmp/node && cd /tmp/node && \
+  wget -O node.zip http://nodejs.org/dist/$AIRSTACK_NODEJS_VERSION/node-$AIRSTACK_NODEJS_VERSION-linux-x64.tar.gz && \
+  tar -xvf node.zip --strip-components=1 && \
+  for i in bin include lib; do mv $i/* /usr/local/$i/; done && \
+  rm -vrf /tmp/node
+
+COPY services/nodejs /package/airstack/nodejs
+
+USER airstack
+ENV HOME /home/airstack
+WORKDIR /home/airstack

@@ -1,0 +1,16 @@
+{
+  "services": {
+    "nodejs": {
+      "state": "down",
+      "enable": "",
+      "disable": "",
+      "run": "/usr/local/bin/node /package/airstack/nodejs/hello_world.js",
+      "check": "",
+      "finish": "",
+      "log": "exec chpst -u root logger -t nodejs -p local0.notice",
+      "tags": ["ssh", "dropbear"],
+      "input": [],
+      "output": []
+    }
+  }
+}
