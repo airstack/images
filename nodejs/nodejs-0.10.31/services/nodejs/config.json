@@ -8,7 +8,7 @@
       "check": "",
       "finish": "",
       "log": "exec chpst -u root logger -t nodejs -p local0.notice",
-      "tags": ["ssh", "dropbear"],
+      "tags": ["nodejs", "app"],
       "input": [],
       "output": []
     }
