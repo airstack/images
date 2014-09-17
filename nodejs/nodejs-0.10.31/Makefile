@@ -6,6 +6,8 @@
 
 # Deriving names from directory structure.
 NAME := airstack/nodejs
+DOCKER_IMAGE := $(NAME):latest
+
 ROOTDIR := $(realpath .)
 
 # Detecting OS
@@ -18,7 +20,6 @@ USERDIR := airstack
 USERNAME := $(USERDIR)
 USERFLAG := --user $(USERNAME)
 USERFLAG_CONSOLE := --user root
-DOCKER_IMAGE := airstack/nodejs:latest
 COMMON_RUNFLAGS := --publish-all --workdir /home/$(USERDIR) -e HOME=$(USERDIR) $(NAME):$(VERSION)
 LINUX_RUNFLAGS := --volume $(USERDIR)/output:/home/$(USERDIR)/output --volume $(ROOTDIR)/input:/home/$(USERDIR)/input:ro
 OSX_RUNFLAGS := --volume $(ROOTDIR)/output:/home/$(USERDIR)/output --volume /home/docker/base0:/home/$(USERDIR)/base0 --volume $(ROOTDIR)/input:/home/$(USERDIR)/input:ro
