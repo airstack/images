@@ -1,0 +1,5 @@
+FROM airstack/core:latest
+
+USER root
+ENV HOME /root
+WORKDIR /root
