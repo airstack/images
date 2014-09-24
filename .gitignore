@@ -1,1 +1,11 @@
+input
+output
+_notes
+_wip
 .DS_Store
+Dockerfile
+Dockerfile.debug
+Dockerfile.dev
+Dockerfile.latest
+Dockerfile.prod
+cache/
