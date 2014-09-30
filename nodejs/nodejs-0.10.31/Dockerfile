@@ -1,3 +1,8 @@
+FROM airstack/core:development
+
+USER root
+ENV HOME /root
+WORKDIR /root
 
 RUN \
   AIRSTACK_NODEJS_VERSION="v0.10.31"; \
@@ -8,3 +13,5 @@ RUN \
   tar -xvf node.zip --strip-components=1 && \
   for i in bin include lib; do mv $i/* /usr/local/$i/; done && \
   rm -vrf /tmp/node
+
+COPY services/nodejs /package/airstack/nodejs
