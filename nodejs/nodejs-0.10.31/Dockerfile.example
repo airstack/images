@@ -1,4 +1,4 @@
-FROM airstack/core:latest
+FROM airstack/core:development
 
 USER root
 ENV HOME /root
