@@ -8,6 +8,5 @@ RUN set -e; \
   wget -O node.zip http://nodejs.org/dist/$AIRSTACK_NODEJS_VERSION/node-$AIRSTACK_NODEJS_VERSION-linux-x64.tar.gz; \
   tar -xvf node.zip --strip-components=1; \
   for i in bin include lib; do mv $i/* /usr/local/$i/; done; \
-  rm -vrf /tmp/node; \
-  apt-get purge -y wget*
+  rm -vrf /tmp/node
 COPY services/nodejs /package/airstack/nodejs
