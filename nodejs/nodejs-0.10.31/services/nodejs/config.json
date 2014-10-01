@@ -7,8 +7,8 @@
       "run": "/usr/local/bin/node /package/airstack/nodejs/hello_world.js",
       "check": "",
       "finish": "",
-      "log": "exec chpst -u root logger -t nodejs -p local0.notice",
-      "tags": ["nodejs", "app"],
+      "log": "exec chpst -u log logger -t nodejs -p user.notice",
+      "tags": ["nodejs", "application", "app"],
       "input": [],
       "output": []
     }
