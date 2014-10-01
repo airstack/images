@@ -1,0 +1,1 @@
+RUN /command/core-package-install postgresql-9.4

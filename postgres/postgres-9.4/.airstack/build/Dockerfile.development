@@ -1,0 +1,4 @@
+FROM airstack/core:development
+RUN /command/core-package-install postgresql-9.4
+COPY services/postgres /package/airstack/postgres
+VOLUME ["/var/lib/postgresql"]
