@@ -1,5 +1,4 @@
 RUN set -e; \
-  /command/core-package-install wget; \
   AIRSTACK_NODEJS_VERSION="v0.10.31"; \
   groupadd --system node --gid 434; \
   useradd --uid 433 --system --gid node -s /bin/bash --comment "NodeJS user" node; \
