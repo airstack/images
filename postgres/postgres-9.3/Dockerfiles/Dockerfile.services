@@ -1,0 +1,2 @@
+COPY services/postgres /package/airstack/postgres
+VOLUME ["/var/lib/postgresql"]

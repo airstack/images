@@ -1,0 +1,16 @@
+{
+  "services": {
+    "postgres": {
+      "state": "up",
+      "enable": "chpst -e /env/postgres -u root sh /package/airstack/postgres/enable",
+      "disable": "",
+      "run": "exec chpst -u postgres /usr/lib/postgresql/9.4/bin/postgres --config-file=/etc/postgresql/9.3/main/postgresql.conf",
+      "check": "",
+      "finish": "",
+      "log": "exec chpst -u log logger -t postgres -p daemon.notice",
+      "tags": ["postgres", "database", "db"],
+      "input": [{"source": "any", "destination": "any", "port": "5432", "protocol": "tcp", "tags": [ "" ]}],
+      "output": [{"source": "any", "destination": "any", "port": "5432", "protocol": "tcp","tags": [ "" ]}]
+    }
+  }
+}
