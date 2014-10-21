@@ -1,0 +1,15 @@
+FROM airstack/core:development
+RUN set -e; \
+  gpg --keyserver pgp.mit.edu --recv-keys 5072E1F5; \
+  gpg -a --export 5072E1F5 | sudo apt-key add - gpg; \
+  echo "deb http://repo.mysql.com/apt/debian/ wheezy mysql-5.6 mysql-5.7-dmr" >> /etc/apt/sources.list
+
+RUN /command/core-package-install mysql-server-5.7 mysql-client-5.7
+# COPY services/mysql /package/airstack/mysql
+# VOLUME ["/var/lib/mysql"]
+
+# ENV PATH $PATH:/usr/local/mysql/bin:/usr/local/mysql/scripts
+
+# COPY docker-entrypoint.sh /entrypoint.sh
+# ENTRYPOINT ["/entrypoint.sh"]
+# CMD ["mysqld", "--datadir=/var/lib/mysql", "--user=mysql"]

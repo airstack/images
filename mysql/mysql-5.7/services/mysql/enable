@@ -1,0 +1,33 @@
+#!/bin/sh
+
+echo "Checking vars"
+echo ${AIRSTACK_POSTGRES_VERSION:=9.4} > /dev/null
+echo ${AIRSTACK_POSTGRES_USER:=postgres} > /dev/null
+echo ${AIRSTACK_POSTGRES_PASS:=postgres} > /dev/null
+echo ${AIRSTACK_POSTGRES_DB:=db} > /dev/null
+echo ${AIRSTACK_POSTGRES_TEMPLATE:=DEFAULT} > /dev/null
+echo ${AIRSTACK_POSTGRES_BIN:=/usr/lib/postgresql/$AIRSTACK_POSTGRES_VERSION/bin/postgres} > /dev/null
+echo ${AIRSTACK_POSTGRES_CONFIG_FILE:=/etc/postgresql/$AIRSTACK_POSTGRES_VERSION/main/postgresql.conf} > /dev/null
+echo ${AIRSTACK_POSTGRES_DATA:=/var/lib/postgresql/$AIRSTACK_POSTGRES_VERSION/main} > /dev/null
+
+echo "Configuring $TMP_SERVICE"
+CONFIG_PATH=/package/airstack/postgres
+chown postgres:postgres $CONFIG_PATH/ -R
+ln -isf $CONFIG_PATH/postgresql.conf /etc/postgresql/$AIRSTACK_POSTGRES_VERSION/main/postgresql.conf
+ln -isf $CONFIG_PATH/pg_hba.conf /etc/postgresql/$AIRSTACK_POSTGRES_VERSION/main/pg_hba.conf
+
+# fix ssl key directory
+mkdir /etc/ssl/private-copy; mv /etc/ssl/private/* /etc/ssl/private-copy/; rm -r /etc/ssl/private; mv /etc/ssl/private-copy /etc/ssl/private; chmod -R 0700 /etc/ssl/private; chown -R postgres /etc/ssl/private
+
+if [ ! -d $AIRSTACK_POSTGRES_DATA ]; then
+    mkdir -p $AIRSTACK_POSTGRES_DATA
+    chown -R postgres:postgres $AIRSTACK_POSTGRES_DATA
+    chpst -u postgres /usr/lib/postgresql/$AIRSTACK_POSTGRES_VERSION/bin/initdb -D $AIRSTACK_POSTGRES_DATA -E 'UTF-8'
+    ln -s /etc/ssl/certs/ssl-cert-snakeoil.pem $AIRSTACK_POSTGRES_DATA/server.crt
+    ln -s /etc/ssl/private/ssl-cert-snakeoil.key $AIRSTACK_POSTGRES_DATA/server.key
+fi
+
+AIRSTACK_POSTGRES_SINGLE="chpst -u postgres $AIRSTACK_POSTGRES_BIN --single --config-file=$AIRSTACK_POSTGRES_CONFIG_FILE"
+echo "CREATE USER $AIRSTACK_POSTGRES_USER WITH SUPERUSER;" | $AIRSTACK_POSTGRES_SINGLE
+echo "ALTER USER $AIRSTACK_POSTGRES_USER WITH PASSWORD '$AIRSTACK_POSTGRES_PASS';" | $AIRSTACK_POSTGRES_SINGLE
+echo "CREATE DATABASE $AIRSTACK_POSTGRES_DB OWNER $AIRSTACK_POSTGRES_USER TEMPLATE $AIRSTACK_POSTGRES_TEMPLATE;" | $AIRSTACK_POSTGRES_SINGLE

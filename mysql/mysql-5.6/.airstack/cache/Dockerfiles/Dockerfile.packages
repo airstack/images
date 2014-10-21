@@ -1,0 +1,6 @@
+RUN set -e; \
+  gpg --keyserver pgp.mit.edu --recv-keys 5072E1F5; \
+  gpg -a --export 5072E1F5 | sudo apt-key add - gpg; \
+  echo "deb http://repo.mysql.com/apt/debian/ wheezy mysql-5.6" >> /etc/apt/sources.list
+
+RUN /command/core-package-install mysql-server-5.6 mysql-client-5.6
