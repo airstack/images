@@ -1,0 +1,16 @@
+{
+  "services": {
+    "dropbear": {
+      "state": "down",
+      "enable": "echo \"airstack\":\"airstack\" | chpasswd",
+      "disable": "",
+      "run": "/usr/sbin/dropbear -F -w -E",
+      "check": "",
+      "finish": "",
+      "log": "exec chpst -u log logger -t dropbear -p auth.notice",
+      "tags": ["ssh", "dropbear"],
+      "input": [{"source": "any", "destination": "any", "port": "22", "protocol": "tcp", "tags": [ "" ]}],
+      "output": [{"source": "any", "destination": "any", "port": "any", "protocol": "tcp","tags": [ "" ]}]
+    }
+  }
+}

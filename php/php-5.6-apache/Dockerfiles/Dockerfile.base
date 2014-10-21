@@ -1,0 +1,1 @@
+FROM <%= @config.build.from.image %>:<%= @config.build.from.tag %>

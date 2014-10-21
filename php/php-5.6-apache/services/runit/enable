@@ -1,0 +1,60 @@
+#!/bin/sh
+
+SOURCE=$0
+TMP_SERVICE=$(basename $(dirname $SOURCE))
+
+DEBUG="${DEBUG_ENABLE-""}"
+[ -z "$DEBUG" ] || set -x -e
+
+# add airstack helpers if they exist:
+ERROR_MESSAGE_DEFAULT="[ERROR] Runit enable script failure -"
+[ -f "/package/airstack/core/airstack-helpers" ] && { . /package/airstack/core/airstack-helpers ;} || { printf "missing airstack-helpers. exiting.\n" && exit 113 ;}
+
+echo "Configuring $TMP_SERVICE"
+RUNIT_DIR="/etc/runit"
+RUNSVDIR_DIR=$RUNIT_DIR/runsvdir
+
+# Remove any existing symlinked directory first.
+if [ -e $RUNIT_DIR ]; then
+	echo "Removing $RUNIT_DIR" && \
+	# TODO use msg_warn util
+	rm -rf $RUNIT_DIR
+fi
+error_check "symlink dir removal"
+
+# enable runlevel scripts
+ln -s /package/airstack/$TMP_SERVICE/runit $RUNIT_DIR
+error_check "symlink runlevel script"
+
+for i in single multi; do
+# Create runsvdir directories
+# See: http://smarden.org/runit/runlevels.html
+  mkdir -p $RUNSVDIR_DIR/$i
+  error_check "create runsvdir directory"
+done
+
+# set default level of single
+[ ! -L $RUNSVDIR_DIR/current ] && ln -sf $RUNSVDIR_DIR/single $RUNSVDIR_DIR/current
+error_check "symlink runsvdir default level"
+
+# /service should be canonical
+[ ! -L /service ] && ln -sf $RUNSVDIR_DIR/current /service
+
+# for debian compatibility, set up /etc/service.
+[ -L /etc/service ] && unlink /etc/service || true && \
+[ -d /etc/service ] && rm -rf /etc/service || true && \
+ln /service /etc/service
+error_check "symlink /service"
+
+# enable custom rc.local
+[ -e /etc/rc.local ] && (rm -f /etc/rc.local && ln -s /package/airstack/$TMP_SERVICE/rc.local /etc/)
+error_check "setup custom /etc/rc.local"
+
+# enable init utils
+RUNSVSTART_DIR=$(which runsvdir-start) && \
+ln -sf /etc/runit/2 $RUNSVSTART_DIR && \
+ln -s /etc/runit/2 /usr/local/bin/container-start && \
+ln -s /etc/runit/3 /usr/local/bin/container-stop && \
+error_check "symlink container commands"
+
+[ -z "$DEBUG" ] || set +x +e

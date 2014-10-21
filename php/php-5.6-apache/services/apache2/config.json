@@ -1,0 +1,16 @@
+{
+  "services": {
+    "apache2": {
+      "state": "up",
+      "enable": "chpst -e /env/apache2 -u root sh /package/airstack/apache2/enable",
+      "disable": "",
+      "run": "apache2 -DFOREGROUND",
+      "check": "",
+      "finish": "",
+      "log": "exec chpst -u log logger -t apache2 -p user.notice",
+      "tags": ["apache", "application-server", "proxy", "reverse-proxy"],
+      "input": [],
+      "output": []
+    }
+  }
+}

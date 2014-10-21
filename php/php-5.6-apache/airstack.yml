@@ -1,0 +1,52 @@
+################################################################################
+# Defaults
+#
+# Best practice is to set defaults to production settings.
+
+name: airstack/php-5.6-apache
+
+build:
+  from:
+    image: php
+    # production tag
+    tag: 5.6-apache
+    distro:
+      name: jessie
+      type: debian
+  dir: .airstack/build
+  cache: .airstack/cache
+  templates:
+    # Build template directory
+    dir: Dockerfiles
+    # Build templates, concatenated in listed order
+    <% dev_tpls = 'Dockerfile.base Dockerfile.core.base Dockerfile.core.packages Dockerfile.core.packages.development Dockerfile.core.services Dockerfile.packages Dockerfile.packages.development Dockerfile.services' %>
+    <% prod_tpls = ' '; prod_tpls = prod_tpls + i + ' ' for i in dev_tpls.split ' ' when not i.match(/(development|test)/) %>
+    files: <%= prod_tpls %>
+
+################################################################################
+# Environment specific sections
+#
+# Prefixed with a colon ':'
+# Missing keys in environment sections will be looked up the default section above.
+
+:development:
+  build:
+    templates:
+      files: <%= dev_tpls %>
+  mount: &dev_mounts
+    - ./command:/package/json/json-utils/command
+    - ./test:/package/json/json-utils/test
+
+:test:
+  build:
+    templates:
+      files: <%= dev_tpls %> Dockerfile.core.services.test Dockerfile.services.test
+  commands:
+    start:
+      cmd: core-watch /package/json/json-utils -c "core-test-runner -f /package/json/json-utils/test/*_spec.lua"
+  mount:
+    *dev_mounts
+
+
+:production:
+  # Build defaults

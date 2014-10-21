@@ -1,0 +1,8 @@
+################################################################################
+# SERVICES: DEVELOPMENT
+################################################################################
+
+# Password-less sudo enabled for airstack user
+RUN set -e; \
+  echo "airstack  ALL = NOPASSWD: ALL" > /etc/sudoers.d/airstack; \
+  usermod --shell /bin/bash airstack

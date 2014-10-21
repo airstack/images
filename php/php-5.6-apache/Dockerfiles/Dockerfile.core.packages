@@ -1,0 +1,47 @@
+################################################################################
+# PACKAGES
+#
+# Add commands required for installing packages. To minimize rebuilds, binaries
+# that are modified less often should be in earlier RUN commands.
+#
+# Conventions:
+#
+# See Dockerfile.base conventions.
+#
+# Packages
+# - use core helper functions to install packages
+#   - /command/core-package-install
+# - put development packages in Dockerfile.packages.development
+#   - reserve this file for common packages only
+# - install packages to /package
+# - symlink commands in /package to /usr/bin or /usr/local/bin
+#
+################################################################################
+
+COPY core/build/ /package/airstack-0.1.0/build
+RUN set -e; \
+  ln -s /package/airstack-0.1.0 /package/airstack; \
+  chmod -R 1755 /package; \
+  mkdir /command; \
+  ln -s /package/airstack/build/core-* /command/
+
+# Packages::Base
+RUN set -e; \
+    /command/core-package-install wget ca-certificates libssl1.0.0 libpcre3 openssl; \
+    /command/core-slashpackage-install jq-1.4
+
+# Packages::runit
+RUN touch /etc/inittab && /command/core-package-install runit
+
+# Packages::socklog
+RUN /command/core-package-install socklog ipsvd netcat-openbsd
+
+# Packages::dropbear
+RUN /command/core-package-install dropbear
+
+# Packages::Lua
+RUN set -e; \
+  /command/core-package-install luajit lua-posix; \
+  mkdir -p /usr/local/share/lua/5.1; \
+  ln -s /usr/bin/luajit /usr/bin/lua; \
+  ln -s /package/airstack/core/lua/airstack.lua /usr/local/share/lua/5.1/airstack.lua

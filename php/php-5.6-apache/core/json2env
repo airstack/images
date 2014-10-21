@@ -1,0 +1,68 @@
+#!/bin/sh -e
+# set -x
+
+# Usage:
+#   json2env .key prefix_
+# Output file:
+#   PREFIX_KEY
+#
+# Note that jq requires special handling of object keys with hyphens.
+# Quotes must be added after the period or jq will throw an error.
+# Ex: json2env ."some-key"
+#
+# Defaults: runtime in /env/runtime.json
+
+
+json2env() {
+  local key; key="$1"
+  local prefix; prefix="$2"
+  local runtime; runtime=$(cat "/env/RUNTIME")
+  local val
+  local filename
+
+  val=$(echo $runtime | jq -r -c "$key")
+
+  filename="$prefix$key"
+  # Remove '.' if first char
+  filename=$(echo $filename | sed -e 's/^\.//')
+  # Convert '.' '[' ']' to '_'
+  filename=$(echo $filename | sed -e 's/\(\[\|\]\|\.\)/_/g')
+  # Remove '-' chars
+  filename=$(echo $filename | sed -e 's/[-"]//g')
+  ## TODO: Joe, do we need different non-alpha here?
+  ## Remove non alphanumeric, '_', or '-' chars
+  ## filename=$(echo $filename | sed -e 's/[^[:alnum:]]//g')
+  # Remove double underscores
+  filename=$(echo $filename | sed -e 's/__/_/g')
+  # Remove trailing underscores
+  filename=$(echo $filename | sed -e 's/\(^_\|_$\)//g')
+  # Convert to upper
+  filename=$(echo $filename | tr "[:lower:]" "[:upper:]")
+
+  # Write value to file
+  echo $val > $filename
+
+  # Return if val is empty
+  [ -z "$val" ] && return 0
+
+  local keys
+  # Array
+  if [ $(echo "$val" | head -c 1) = "[" ]; then
+    keys=$(echo $runtime | jq -r -c "$key | keys[]")
+    for k in $keys; do
+      main "$key[$k]" $prefix
+    done
+  # Object
+  elif [ $(echo "$val" | head -c 1) = "{" ]; then
+    keys=$(echo $runtime | jq -r -c "$key | keys[]")
+    for k in $keys; do
+      main "$key.\"$k\"" $prefix
+    done
+  fi
+}
+
+main() {
+  json2env "$@"
+}
+
+main "$@"

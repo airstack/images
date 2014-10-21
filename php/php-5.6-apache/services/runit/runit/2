@@ -1,0 +1,128 @@
+#!/bin/sh
+
+
+PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
+
+# add airstack helpers if they exist:
+ERROR_MESSAGE_DEFAULT="[ERROR] runit runlevel 2 -"
+[ -f "/package/airstack/core/airstack-helpers" ] && { . /package/airstack/core/airstack-helpers ;} || { printf "missing airstack-helpers. exiting.\n" && exit 113 ;}
+
+set -e
+msg "Initializing Runit Level 2\n"
+
+# defaults to 'multi', but can pass in different runlevel.
+# /etc/runit/2 single
+
+TMP_RUNLEVEL=$1
+runsvchdir ${TMP_RUNLEVEL:="multi"} >/dev/null
+
+# run in bg
+env - PATH=$PATH \
+/usr/bin/runsvdir -P /etc/service 'log: ...........................................................................................................................................................................................................................................................................................................................................................................................................' &
+
+# Enable all services in parallel if not in single runlevel. See [TODO service docs] for details.
+
+
+##########################################################
+# NOTES FROM "HOW TO JSON2ENV" SESSION
+#
+# Directory structure for chpst -e environment vars
+# /etc/airstack/
+#   runtime.json
+#   env/
+#     env
+#     name
+#     role
+#     ...
+# /service/
+#   dropbear/
+#     env/
+#       dropbear_state
+#       dropbear_enable
+#       dropbear_disable
+#       dropbear_run
+#       dropbear_tags           < ["ssh"]
+#       dropbear_tags_0         < ssh
+#       dropbear_input          < [{"location": "", "port": "22", "protocol": "tcp", "tags": [ "ssh" ]}]
+#       dropbear_input_0        < {"location": "", "port": "22", "protocol": "tcp", "tags": [ "ssh" ]}
+#       dropbear_input_0_port   < 22
+#       dropbear_input_0_tags   < ["ssh"]
+#       dropbear_input_0_tags_0 < ssh
+#       ...
+#   serf/
+#     env/
+#       serf_state
+#       serf_enable
+#       ...
+#
+# Load env vars with ...
+# $ chpst -e /package/airstack/env/serivces/dropbear -e /package/airstack/env/services/core
+# Note that core is loaded last to prevent service definitions from clobbering it as a best practice.
+#
+# Handling Arrays and Objects
+# Since we don't know if a program would prefer json or verbose env vars, we make both available.
+# Nested objects should be fully enumerated and split into env vars at every nesting level.
+# See dropbear_input vs dropbear_input_0_tags_0 above. If the value of an object key is an array or object,
+# make a <servie>_<key>=<json> env var and then iterate through the json value and create additional
+# env vars.
+#
+# CONVENTIONS:
+# - only root level keys of runtime.json are available for interpolation in service vals
+#   - e.g. $AIRSTACK_USER_NAME is available for DROPBEAR_ENABLE
+# - /package is immutable package repo
+# - /command is a location to symlink binaries from the /package dir
+# - /service/<service>/env contains runtime service configs
+#
+
+# If not in runlevel "single", then supervise services.
+# When supervised services are added, the default runit command of "start" is called unless otherwise specified in config.json.
+# In other words, services can be supervised but not started if the default command is stop.
+# TODO: in service-conf, check the "state" key in config.json
+
+
+# 1. combine each services config.json into one json object: <SERVICES>
+# 2. jq <SERVICES> * core/config.json * AIRSTACK_RUNTIME_VARS > runtime.json
+# 3. Use only runtime.json in service-conf
+
+# put AIRSTACK_RUNTIME_VARS in temp file with default {} if empty.
+
+merge_runtime_jsons() {
+  [ -d /env ] || mkdir -p /env
+  local json_new="/env/RUNTIME_NEW"
+  echo ${AIRSTACK_RUNTIME_VARS:='{}'} | jq '' > $json_new
+  # ensure config.json is first
+  local tmp_cfg_json; tmp_cfg_json="/package/airstack/core/config.json"
+  local tmp_dirs; tmp_dirs=$(ls /package/airstack/*/config.json | grep -Pv 'core')
+  /command/core-json-deepmerge \
+    $(echo "$tmp_cfg_json") $(echo "$tmp_dirs") "$json_new" > /env/RUNTIME
+}
+
+merge_runtime_jsons
+error_check "merge failure. ohnoes."
+
+# Create env files in /env and /service/<service>/env
+
+/package/airstack/core/json2env-core
+/package/airstack/core/json2env-services
+
+msg "Starting /dev/log service in $TMP_RUNLEVEL mode\n"
+/package/airstack/core/service-conf socklog-unix 2>&1
+# error_check "enabling socklog-unix "
+while [ ! -e /dev/log ]; do sleep 0.01; done;
+
+AIRSTACK_SERVICES=$(cat /env/RUNTIME | jq -r '.services | keys[]' | awk '{ gsub(/socklog-unix/, ""); print $0}')
+
+if [ "$TMP_RUNLEVEL" != "single" ]; then
+	echo $AIRSTACK_SERVICES | xargs -n1 -P0 sh /package/airstack/core/service-conf
+fi
+
+printf "%s\n" "services currently running:"
+update-service --list
+
+# tail syslog in foreground if file larger than 0
+# while true; do
+# [ -s /var/log/syslog ] && break
+# sleep 0.01
+# done
+# printf "\n%s\n" "Showing log entries from: /var/log/syslog"
+# printf "\n" && tail -n10 -F /var/log/syslog
