@@ -6,3 +6,4 @@ _wip
 
 # AIRSTACK
 *.tar
+.airstack/cache
